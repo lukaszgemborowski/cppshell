@@ -4,9 +4,18 @@ int main(int argc, char **argv)
 {
     using namespace cppshell;
 
-    if ("g++ --version"_e) {
-        std::cout << "g++ succesfully executed\n";
-    }
+    std::string ls;
 
-    "ls -la"_e | "grep cxx"_e > "./output";
+    // ls -la > test_file
+    "ls -la"_e > "test_file";
+
+    // cat test_file
+    "cat test_file"_e;
+
+    // rm test_file
+    "rm test_file"_e;
+
+    if (!"false"_e) {
+        std::cout << "command returned error\n";
+    }
 }

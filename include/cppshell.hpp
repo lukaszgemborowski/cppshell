@@ -9,6 +9,18 @@
 namespace cppshell
 {
 
+struct string_out
+{
+    string_out(std::string &target)
+        : target {target}
+    {}
+
+    string_out(string_out &&) = default;
+
+    std::string &target;
+    boost::process::ipstream stream;
+};
+
 struct std_err
 {
     explicit std_err(const char *path)
@@ -82,7 +94,7 @@ struct process_desc
     // subset of Args. Otherwise nasty compiler error will appear. :-)
     template<class... IncomingArgs, class Append>
     process_desc(process_desc<Exec, IncomingArgs...> &&pr, Append&& app)
-        : args{std::tuple_cat(pr.args, std::tuple(app))}
+        : args{std::tuple_cat(pr.args, std::make_tuple(std::move(app)))}
     {
         pr.execute = false;
     }
@@ -97,10 +109,18 @@ struct process_desc
         pr.execute = false;
     }
 
+    template<class T> void drain(T&){}
+    void drain(string_out &o)
+    {
+        o.target = std::string(std::istreambuf_iterator<char>(o.stream), {});
+    }
+
     template<std::size_t... I>
     auto run(std::index_sequence<I...>)
     {
-        return executor.run(extract(std::get<I>(args))...);
+        auto result = executor.run(extract(std::get<I>(args))...);
+        (drain(std::get<I>(args)), ...);
+        return result;
     }
 
     template<class A>
@@ -129,6 +149,11 @@ struct process_desc
         return boost::process::std_in = p.stream;
     }
 
+    auto extract(string_out &p)
+    {
+        return boost::process::std_out = p.stream;
+    }
+
     ~process_desc()
     {
         if (execute) {
@@ -142,6 +167,8 @@ struct process_desc
             execute = false;
             return run(std::make_index_sequence<std::tuple_size_v<decltype(args)>>{});
         }
+
+        return -1;
     }
 
     operator bool()
@@ -188,6 +215,12 @@ template<class E, class... Args>
 auto operator>(process_desc<E, Args...> &&p, std_err out)
 {
     return append(std::forward<process_desc<E, Args...>>(p), out);
+}
+
+template<class E, class... Args>
+auto operator>(process_desc<E, Args...> &&p, std::string& out)
+{
+    return append(std::forward<process_desc<E, Args...>>(p), string_out{out});
 }
 
 template<class First, class Second>
