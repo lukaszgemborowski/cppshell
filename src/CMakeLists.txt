@@ -4,7 +4,7 @@ set(
 )
 
 find_package(
-    Boost 1.70.0 REQUIRED
+    Boost 1.70.0 COMPONENTS filesystem
 )
 
 find_package(Threads REQUIRED)
@@ -18,8 +18,8 @@ add_library(
 target_link_libraries(
     cppshell
     PUBLIC
-    boost_filesystem
-    boost_system
+    Boost::filesystem
+    Threads::Threads
 )
 
 target_compile_features(
