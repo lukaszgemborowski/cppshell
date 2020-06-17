@@ -4,6 +4,9 @@ int main(int argc, char **argv)
 {
     using namespace cppshell;
 
-    "g++ --version"_e;
+    if ("g++ --version"_e) {
+        std::cout << "g++ succesfully executed\n";
+    }
+
     "ls -la"_e | "grep cxx"_e > "./output";
 }

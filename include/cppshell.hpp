@@ -98,9 +98,9 @@ struct process_desc
     }
 
     template<std::size_t... I>
-    void run(std::index_sequence<I...>)
+    auto run(std::index_sequence<I...>)
     {
-        executor.run(extract(std::get<I>(args))...);
+        return executor.run(extract(std::get<I>(args))...);
     }
 
     template<class A>
@@ -134,6 +134,19 @@ struct process_desc
         if (execute) {
             run(std::make_index_sequence<std::tuple_size_v<decltype(args)>>{});
         }
+    }
+
+    operator int()
+    {
+        if (execute) {
+            execute = false;
+            return run(std::make_index_sequence<std::tuple_size_v<decltype(args)>>{});
+        }
+    }
+
+    operator bool()
+    {
+        return static_cast<int>(*this) == 0;
     }
 
     bool execute = true;
